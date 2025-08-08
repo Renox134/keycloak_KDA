@@ -51,14 +51,14 @@ Building the provider is the most complicated it gets. Everything afterwards sho
 
 ## 🎨 Where's the Custom Theme?
 
-Inside this repo’s root folder, there’s a `theme/kd-custom/` directory.
+Inside this repo’s root folder, there’s a `theme/kd-custom/` directory.  
+This contains the **custom login theme** used to inject JavaScript for keystroke capture and support the custom authentication flow.
 
-This folder contains the custom theme.
+> **Important:** The theme is based on the `keycloak.v2` theme system introduced in Keycloak 22+ and specifically developed for version **26.3.2**.
 
-> **Note:** Almost everything in this custom theme is an addition. However, one file, namely the `login.ftl` template, is overwritten. Therefore, should the nature of the base `login.ftl` template change as keycloak progresses, it may be better to use the base template as a foundation and then apply changes to it. Fortunately, very little was changed. Currently, there are only three changes:
-1. An import was added at the top (```<#import "detection.ftl" as detect>```)
-2. In line 16, the "onsubmit" part was coated in an if statement (```<#if !(detectAutomation?? && detectAutomation)>onsubmit="login.disabled = true; return true;"</#if>```)
-3. A line containing ```<@detect.detectionScripts />``` was added at the very bottom.
+The only file that **overrides** a Keycloak-provided template is `login.ftl`. It works as-is, but **may require updates** in future Keycloak versions if the structure of the base `login.ftl` changes.
+
+🔧 If you're working with a newer Keycloak version and want to update the overridden file accordingly, see [Theme Update Instructions](THEME_OVERRIDES.md).
 
 
 ---
@@ -77,7 +77,7 @@ If you haven’t yet set up Keycloak, follow these steps:
    keycloak-[version]/providers/
    ```
 
-4. **Copy the Theme** into:
+4. **Copy the Theme** (`kd-custom`) into:
    ```
    keycloak-[version]/themes/
    ```
