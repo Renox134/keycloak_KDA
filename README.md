@@ -59,7 +59,8 @@ This folder contains the custom theme.
 1. An import was added at the top (```<#import "detection.ftl" as detect>```)
 2. In line 16, the "onsubmit" part was coated in an if statement (```<#if !(detectAutomation?? && detectAutomation)>onsubmit="login.disabled = true; return true;"</#if>```)
 3. A line containing ```<@detect.detectionScripts />``` was added at the very bottom.
-As long as these changes are included, nothing should stop the add-on from working with a newer `login.ftl` template as foundation.
+
+> As long as these changes are included, nothing should stop the add-on from working with a newer `login.ftl` template as foundation.
 
 ---
 
