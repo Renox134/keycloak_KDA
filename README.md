@@ -55,7 +55,7 @@ Inside this repo’s root folder, there’s a `theme/kd-custom/` directory.
 
 This folder contains the custom theme.
 
-> **Note:** Almost everything in this custom theme is an addition. However, one file, namely the `login.ftl` template, is overwritten. Therefore, should the nature of the base `login.ftl` template change as keycloak progresses, it may be better to use the base template as a foundation and then apply changes to it. Fortunately, very little was changed. Currently, there are only three changes:
+> **Note:** Almost everything in this custom theme is an addition. However, one file, namely the `login.ftl` template, is overwritten. Therefore, should the nature of the base `login.ftl` template change as keycloak progresses (this version is based of Keycloak version 26.3.2), it may be better to use the base template as a foundation and then apply changes to it. Fortunately, very little was changed. Currently, there are only three changes:
 1. An import was added at the top (```<#import "detection.ftl" as detect>```)
 2. In line 16, the "onsubmit" part was coated in an if statement (```<#if !(detectAutomation?? && detectAutomation)>onsubmit="login.disabled = true; return true;"</#if>```)
 3. A line containing ```<@detect.detectionScripts />``` was added at the very bottom.
