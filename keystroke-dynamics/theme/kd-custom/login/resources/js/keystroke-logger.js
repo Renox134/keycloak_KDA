@@ -6,7 +6,7 @@ class KeystrokeLogger {
     this.lastKeyDownTime = null;
     this.activeKeys = new Set();
     this.keyDownTimestamps = {};
-    this.previousInputValue = "";
+    this.previousValue = "";
 
     this.init();
   }
@@ -19,18 +19,44 @@ class KeystrokeLogger {
 
     this.inputElement.addEventListener('keydown', (e) => this.handleKeyDown(e));
     this.inputElement.addEventListener('keyup', (e) => this.handleKeyUp(e));
-    this.inputElement.addEventListener('input', () => this.handleInputChange());
+    this.inputElement.addEventListener('input', () => this.handleInput());
   }
 
-  handleInputChange() {
+  handleInput() {
     const currentValue = this.inputElement.value;
+    const prev = this.previousValue;
 
     // If input is cleared, assume a reset and wipe all logging
-    if (this.previousInputValue.length > 0 && currentValue.length === 0) {
+    if (prev.length > 0 && currentValue.length === 0) {
       this.reset(); // Clear all internal tracking
     }
+    this.previousValue = currentValue;
+    const now = performance.now();
 
-    this.previousInputValue = currentValue;
+    if (!this.typingStart) {
+      this.typingStart = now;
+    }
+
+    const change = this.diffStrings(prev, currentValue);
+
+    if (change) {
+      this.keystrokes.push({
+        len: change.len,
+        type: change.type,
+        timestamp: this.round(now - this.typingStart)
+      });
+    }
+  }
+
+  diffStrings(oldStr, newStr) {
+    if (newStr.length > oldStr.length) {
+      return {
+        len: newStr.length - oldStr.length,
+        type: 'insert'
+      };
+    } else {
+      return null;
+    }
   }
 
   round(value) {
@@ -84,14 +110,14 @@ class KeystrokeLogger {
 
   getData() {
     const lastKeystroke = this.keystrokes.length > 0
-      ? this.keystrokes[this.keystrokes.length - 1]
-      : null;
+        ? this.keystrokes[this.keystrokes.length - 1]
+        : null;
 
     let totalTime = 0;
     if (this.typingStart && lastKeystroke){
       let first_down = -0.01;
       for (let j = 0; j < this.keystrokes.length; j++){
-        if(this.keystrokes[j]["type"] === 'down'){
+        if(this.keystrokes[j]["type"] === 'down' || this.keystrokes[j]["type"] === 'insert'){
           first_down = this.keystrokes[j]["timestamp"];
           break;
         }
@@ -111,6 +137,6 @@ class KeystrokeLogger {
     this.keyDownTimestamps = {};
     this.lastKeyDownTime = null;
     this.activeKeys.clear();
-    this.previousInputValue = "";
+    this.previousValue = "";
   }
 }

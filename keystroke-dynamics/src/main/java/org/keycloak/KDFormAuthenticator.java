@@ -141,7 +141,7 @@ public class KDFormAuthenticator implements Authenticator {
                 return;
             }
             // check for automation
-            boolean isAutomated = isAutomatedML(getVector(keystrokes));
+            boolean isAutomated = isTypeOneAutomation(keystrokes) || isAutomatedML(getVector(keystrokes));
 
             context.setUser(user);
             context.getAuthenticationSession().setAuthNote("username", username);
@@ -179,21 +179,64 @@ public class KDFormAuthenticator implements Authenticator {
     }
 
     /**
+     * Checks whether the given keystrokes indicate type one automation, meaning automation where
+     * the password was pasted or inserted in some way, without generating synthetic keystrokes in the process.
+     * @param keystrokes The keystrokes to analyze.
+     * @return Returns true in three cases:
+     * Case one: an insert was found where more than one character was entered at once
+     * Case two: There are exactly 0 keydown and keyup events (which indicates phone usage) and less than
+     * passwordMinLength inserts.
+     * Case three: The number of keydown or keyup events is below the min password length.
+     */
+    private boolean isTypeOneAutomation(String keystrokes){
+        System.out.println("Received keystrokes: " + keystrokes);
+
+        Pattern typeDownPattern = Pattern.compile("\"type\"\\s*:\\s*\"down\"");
+        Pattern typeUpPattern = Pattern.compile("\"type\"\\s*:\\s*\"up\"");
+        Pattern typeInsertPattern = Pattern.compile("\"type\"\\s*:\\s*\"insert\"");
+        Pattern insertLengthPattern = Pattern.compile("\"len\"\\s*:\\s*(\\d+)");
+
+        int downCount = 0;
+        int upCount = 0;
+        int insertCount = 0;
+
+        Matcher m;
+
+        // check for inserts with more than one character
+        m = insertLengthPattern.matcher(keystrokes);
+        while (m.find()) {
+            int currentLen = Integer.parseInt(m.group(1));
+            if (currentLen > 1) return true;
+        }
+
+        // count ups and downs
+        m = typeUpPattern.matcher(keystrokes);
+        while (m.find()) upCount++;
+
+        m = typeDownPattern.matcher(keystrokes);
+        while (m.find()) downCount++;
+
+        m = typeInsertPattern.matcher(keystrokes);
+        while (m.find()) insertCount++;
+
+        // case for phone or tablet (device without physical keyboard, where only insert events can occur)
+        if(upCount == 0 && downCount == 0) return insertCount < this.passwordMinLength;
+
+        return upCount < this.passwordMinLength || downCount < this.passwordMinLength;
+    }
+
+    /**
      * Calculates the vector containing the classification features, given the captured keystrokes.
      * @param keystrokes The captured keystrokes.
      * @return A vector containing the median down down time, median down down difference, and the median dwell time.
      */
     private List<Double> getVector(String keystrokes) {
-        System.out.println("Received keystrokes: " + keystrokes);
         List<Double> vector = new ArrayList<>();
         Pattern downDownPattern = Pattern.compile("\"down_down\"\\s*:\\s*(\\d+(\\.\\d+)?)");
         Pattern dwellTimePattern = Pattern.compile("\"dwellTime\"\\s*:\\s*(\\d+(\\.\\d+)?)");
-        Pattern typeDownPattern = Pattern.compile("\"type\"\\s*:\\s*\"down\"");
-        Pattern totalTimePattern = Pattern.compile("\"totalTime\"\\s*:\\s*(\\d+(\\.\\d+)?)");
 
         List<Double> downDowns = new ArrayList<>();
         List<Double> dwellTimes = new ArrayList<>();
-        int downCount = 0;
 
         Matcher m;
 
@@ -202,18 +245,6 @@ public class KDFormAuthenticator implements Authenticator {
 
         m = dwellTimePattern.matcher(keystrokes);
         while (m.find()) dwellTimes.add(Double.parseDouble(m.group(1)));
-
-        m = typeDownPattern.matcher(keystrokes);
-        while (m.find()) downCount++;
-
-        m = totalTimePattern.matcher(keystrokes);
-        double totalTime = m.find() ? Double.parseDouble(m.group(1)) : 0;
-
-        if (downCount < passwordMinLength || totalTime == 0){
-            if (downCount < passwordMinLength && !production) System.out.println("Info: Too few keystrokes: " + downCount);
-            if (totalTime == 0 && !production) System.out.println("Info: Total time is 0");
-            return vector;
-        }
 
         downDowns.sort(Double::compareTo);
         dwellTimes.sort(Double::compareTo);
